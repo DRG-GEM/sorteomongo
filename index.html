@@ -96,41 +96,23 @@
     </div>
 
     <script>
-        // --- ⚙️ PASO 1: CONFIGURACIÓN DE SUPABASE ⚙️ ---
-        // Ve a https://supabase.com/, crea una cuenta gratuita y un nuevo proyecto.
-        // Después, pega aquí tu URL y tu clave pública (anon key).
-        // Las encontrarás en "Project Settings" > "API".
+        // --- ⚙️ CONFIGURACIÓN DE SUPABASE ⚙️ ---
         const SUPABASE_URL = 'https://ekhmybkmoicwnymxqhgo.supabase.co'; // <-- Pega tu URL de Supabase aquí
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVraG15Ymttb2ljd255bXhxaGdvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzg0OTYsImV4cCI6MjA2ODk1NDQ5Nn0.WtmtyrJoqgJiuOSYbtpG8qZKwzqOwzEJHKmv1RdMW4Q'; // <-- Pega tu "anon key" de Supabase aquí
 
-        // --- INSTRUCCIONES ADICIONALES (SOLO UNA VEZ POR PROYECTO) ---
-        // 1. En tu proyecto de Supabase, ve a "SQL Editor".
-        // 2. Haz clic en "+ New query" y pega el siguiente código para crear la tabla:
+        // --- INSTRUCCIONES SQL (Solo una vez por proyecto) ---
         /*
-            CREATE TABLE public.raffles (
-              id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-              option1 TEXT,
-              option2 TEXT,
-              winner TEXT,
-              created_at TIMESTAMPTZ DEFAULT now()
-            );
-
+            CREATE TABLE public.raffles (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), option1 TEXT, option2 TEXT, winner TEXT, created_at TIMESTAMPTZ DEFAULT now());
             ALTER TABLE public.raffles ENABLE ROW LEVEL SECURITY;
-
-            CREATE POLICY "Public raffles are viewable by everyone." 
-            ON public.raffles FOR SELECT USING (true);
-
-            CREATE POLICY "Users can create and update their own raffles." 
-            ON public.raffles FOR ALL USING (true);
+            CREATE POLICY "Public raffles are viewable by everyone." ON public.raffles FOR SELECT USING (true);
+            CREATE POLICY "Users can create and update their own raffles." ON public.raffles FOR ALL USING (true);
         */
-        // 3. ¡Haz clic en "RUN" y ya está todo listo!
 
-        // --- Código de la aplicación (no necesitas tocar nada de aquí para abajo) ---
+        // --- Código de la aplicación ---
         const { createClient } = supabase;
         let supabaseClient;
         let raffleChannel;
 
-        // Elementos del DOM
         const option1Input = document.getElementById('option1');
         const option2Input = document.getElementById('option2');
         const startRaffleButton = document.getElementById('start-raffle-button');
@@ -145,11 +127,8 @@
         const copyFeedback = document.getElementById('copy-feedback');
 
         let raffleId;
-        let localState = { winner: null };
+        let localWinnerState = null;
 
-        // --- Funciones ---
-        
-        /** Inicializa el cliente de Supabase y la lógica de la app. */
         function initializeApp() {
             if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
                 setupNotice.classList.remove('hidden');
@@ -160,10 +139,8 @@
             
             supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             handleUrl();
-            listenToRaffleChanges();
         }
 
-        /** Gestiona el ID del sorteo desde la URL. */
         function handleUrl() {
             const params = new URLSearchParams(window.location.search);
             raffleId = params.get('id');
@@ -175,9 +152,9 @@
             }
             shareUrlInput.value = window.location.href;
             fetchInitialState();
+            listenToRaffleChanges();
         }
 
-        /** Obtiene el estado inicial del sorteo desde la base de datos. */
         async function fetchInitialState() {
             const { data, error } = await supabaseClient
                 .from('raffles')
@@ -187,14 +164,13 @@
             
             if (data) {
                 updateUI(data);
-            } else if (error && error.code === 'PGRST116') { // No rows returned, es un sorteo nuevo
-                resetUI(); // Aseguramos que la UI empiece limpia
+            } else if (error && error.code === 'PGRST116') {
+                resetUI(true);
             } else if (error) {
                  console.error("Error al cargar estado inicial:", error);
             }
         }
 
-        /** Escucha cambios en tiempo real en la tabla del sorteo. */
         function listenToRaffleChanges() {
             raffleChannel = supabaseClient.channel(`raffle-${raffleId}`)
                 .on('postgres_changes', 
@@ -204,40 +180,33 @@
                         updateUI(payload.new);
                     }
                 )
-                .subscribe((status, err) => {
-                     if (status === 'SUBSCRIBED') {
-                        console.log('Conectado al canal en tiempo real.');
-                    }
-                    if(err) {
-                        console.error("Error en la subscripción en tiempo real:", err);
-                    }
-                });
+                .subscribe();
         }
         
-        /** Actualiza la UI con los nuevos datos. */
         function updateUI(data) {
-            // Si hay un ganador
+            if (!data) return;
+
             if (data.winner) {
-                if (localState.winner !== data.winner) { // Si es un ganador nuevo, animar
-                    localState.winner = data.winner;
+                if (localWinnerState !== data.winner) {
+                    localWinnerState = data.winner;
                     runWinnerAnimation(data.option1, data.option2, data.winner);
-                } else { // Si ya había ganador (ej. al recargar), solo mostrarlo
+                } else {
                     showResultPhase(data.winner);
                 }
-            } 
-            // Si NO hay ganador
-            else {
-                // Estamos en la fase de opciones
-                resetUI(); 
+            } else {
+                localWinnerState = null;
+                optionsPhase.classList.remove('hidden');
+                resultPhase.classList.add('hidden');
                 
-                // Actualizamos los inputs con el texto sincronizado
-                if (document.activeElement !== option1Input) option1Input.value = data.option1 || '';
-                if (document.activeElement !== option2Input) option2Input.value = data.option2 || '';
-                localState.winner = null;
+                if (document.activeElement !== option1Input) {
+                    option1Input.value = data.option1 || '';
+                }
+                if (document.activeElement !== option2Input) {
+                    option2Input.value = data.option2 || '';
+                }
             }
         }
         
-        /** Muestra la fase de resultados. */
         function showResultPhase(winner) {
              optionsPhase.classList.add('hidden');
              resultPhase.classList.remove('hidden');
@@ -245,7 +214,6 @@
              resultDisplay.textContent = winner;
         }
 
-        /** Ejecuta la animación del ganador. */
         function runWinnerAnimation(opt1, opt2, winner) {
             optionsPhase.classList.add('hidden');
             resultPhase.classList.remove('hidden');
@@ -264,18 +232,18 @@
             }, 100);
         }
 
-        /** Resetea la UI a su estado inicial. */
-        function resetUI() {
-            localState.winner = null;
+        function resetUI(clearInputs) {
+            localWinnerState = null;
             optionsPhase.classList.remove('hidden');
             resultPhase.classList.add('hidden');
             resultDisplay.textContent = '';
             animationContainer.textContent = '';
-            option1Input.value = '';
-            option2Input.value = '';
+            if (clearInputs) {
+                option1Input.value = '';
+                option2Input.value = '';
+            }
         }
 
-        /** Guarda el estado actual del sorteo en Supabase. */
         async function saveState(state) {
             const { error } = await supabaseClient
                 .from('raffles')
@@ -284,8 +252,15 @@
             if (error) console.error('Error guardando el estado:', error.message);
         }
         
-        // --- Event Handlers ---
-        
+        function handleInputChange() {
+            const currentState = {
+                option1: option1Input.value.trim(),
+                option2: option2Input.value.trim(),
+                winner: null
+            };
+            saveState(currentState);
+        }
+
         startRaffleButton.addEventListener('click', async () => {
             const opt1 = option1Input.value.trim();
             const opt2 = option2Input.value.trim();
@@ -298,8 +273,8 @@
              await saveState({ option1: '', option2: '', winner: null });
         });
 
-        option1Input.addEventListener('input', () => saveState({ option1: option1Input.value.trim() }));
-        option2Input.addEventListener('input', () => saveState({ option2: option2Input.value.trim() }));
+        option1Input.addEventListener('input', handleInputChange);
+        option2Input.addEventListener('input', handleInputChange);
 
         copyUrlButton.addEventListener('click', () => {
             navigator.clipboard.writeText(shareUrlInput.value).then(() => {
@@ -308,7 +283,6 @@
             });
         });
         
-        // --- Confetti ---
         function launchConfetti() {
             for (let i = 0; i < 50; i++) {
                 const c = document.createElement('div');
@@ -321,7 +295,6 @@
             }
         }
         
-        // --- Inicialización ---
         document.addEventListener('DOMContentLoaded', initializeApp);
 
     </script>
