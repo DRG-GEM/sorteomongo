@@ -45,7 +45,7 @@
         </div>
 
         <div id="setup-notice" class="hidden mb-6 p-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 rounded-lg text-center">
-             <p class="text-amber-800 dark:text-amber-200 text-sm">
+             <p id="setup-text" class="text-amber-800 dark:text-amber-200 text-sm">
                 ¡Acción requerida! Pega tu objeto de configuración de Firebase en el código para activar la sincronización.
             </p>
         </div>
@@ -96,10 +96,6 @@
 
     <script>
         // --- ⚙️ PASO 1: CONFIGURACIÓN DE FIREBASE ⚙️ ---
-        // 1. Ve a https://console.firebase.google.com/ y crea un nuevo proyecto.
-        // 2. En la config. del proyecto (⚙️), crea una nueva "App web" (</>). Firebase te dará un objeto de config. CÓPIALO.
-        // 3. Ve a "Realtime Database" (menú de la izquierda). Arriba verás la URL de tu base de datos. CÓPIALA.
-        // 4. Pega aquí el objeto de config. Y ASEGÚRATE de añadir/completar la línea `databaseURL`.
         const firebaseConfig = {
           apiKey: "AIzaSyA0l9pkEG8leCOuSwG2Eh6C7hrqUKanl5k",
           authDomain: "sorteo2526.firebaseapp.com",
@@ -107,15 +103,11 @@
           storageBucket: "sorteo2526.firebasestorage.app",
           messagingSenderId: "384343299958",
           appId: "1:384343299958:web:259844ab88c19ee3098c57",
-          // ¡¡¡LÍNEA CLAVE FALTANTE!!! Pega aquí la URL de tu Realtime Database:
           databaseURL: "https://sorteo2526-default-rtdb.europe-west1.firebasedatabase.app/" 
         };
 
         // --- ⚙️ PASO 2: REGLAS DE LA BASE DE DATOS (Solo una vez) ⚙️ ---
-        // En tu proyecto de Firebase, ve a "Realtime Database" > "Reglas". Borra lo que haya y pega esto. Luego "Publicar".
-        /*
-            { "rules": { ".read": "true", ".write": "true" } }
-        */
+        /* { "rules": { ".read": "true", ".write": "true" } } */
 
         // --- Código de la aplicación ---
         const option1Input = document.getElementById('option1');
@@ -127,6 +119,7 @@
         const resultDisplay = document.getElementById('result-display');
         const animationContainer = document.getElementById('animation-container');
         const setupNotice = document.getElementById('setup-notice');
+        const setupText = document.getElementById('setup-text');
         const shareUrlInput = document.getElementById('share-url');
         const copyUrlButton = document.getElementById('copy-url-button');
         const copyFeedback = document.getElementById('copy-feedback');
@@ -144,16 +137,20 @@
         }
 
         function initializeApp() {
-            // Comprobación más estricta
-            if (!firebaseConfig.apiKey || !firebaseConfig.databaseURL) {
+            try {
+                if (!firebaseConfig.apiKey || !firebaseConfig.databaseURL) {
+                    throw new Error("Falta 'apiKey' o 'databaseURL' en la configuración.");
+                }
+                firebase.initializeApp(firebaseConfig);
+                console.log("✅ Firebase inicializado correctamente.");
+                handleUrl();
+            } catch (e) {
+                console.error("❌ ERROR AL INICIALIZAR FIREBASE:", e);
+                setupText.innerHTML = `Error en la configuración de Firebase. Revisa la consola (F12) para más detalles.`;
                 setupNotice.classList.remove('hidden');
-                document.getElementById('share-block').style.display = 'none';
-                console.error("Configuración de Firebase incompleta. Falta 'apiKey' o 'databaseURL'.");
-                return;
+                setupNotice.classList.replace('bg-amber-50', 'bg-red-100');
+                setupNotice.classList.replace('border-amber-300', 'border-red-400');
             }
-            
-            firebase.initializeApp(firebaseConfig);
-            handleUrl();
         }
 
         function handleUrl() {
@@ -172,11 +169,15 @@
         }
 
         function listenToRaffleChanges() {
+            console.log(`👂 Escuchando cambios en la ruta: raffles/${raffleId}`);
             dbRef.on('value', (snapshot) => {
                 const data = snapshot.val();
+                console.log("📡 Datos recibidos de Firebase:", data);
                 if (data) {
                     updateUI(data);
                 }
+            }, (error) => {
+                console.error("❌ ERROR al escuchar la base de datos:", error);
             });
         }
         
@@ -221,7 +222,14 @@
         }
 
         const debouncedSave = debounce((fieldName, value) => {
-            dbRef.child(fieldName).set(value);
+            console.log(`💾 Intentando guardar... Campo: ${fieldName}, Valor: "${value}"`);
+            dbRef.child(fieldName).set(value)
+                .then(() => {
+                    console.log(`✅ ¡Éxito! Campo ${fieldName} guardado.`);
+                })
+                .catch((error) => {
+                    console.error(`❌ ERROR al guardar el campo ${fieldName}:`, error);
+                });
         }, 350);
 
         startRaffleButton.addEventListener('click', () => {
