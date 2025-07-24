@@ -97,28 +97,24 @@
     <script>
         // --- ⚙️ PASO 1: CONFIGURACIÓN DE FIREBASE ⚙️ ---
         // 1. Ve a https://console.firebase.google.com/ y crea un nuevo proyecto.
-        // 2. En la configuración del proyecto (icono ⚙️), baja a "Tus apps" y crea una nueva "App web" (icono </>).
-        // 3. Firebase te dará un objeto de configuración. Copia y pégalo aquí, reemplazando el objeto de ejemplo.
+        // 2. En la config. del proyecto (⚙️), crea una nueva "App web" (</>). Firebase te dará un objeto de config. CÓPIALO.
+        // 3. Ve a "Realtime Database" (menú de la izquierda). Arriba verás la URL de tu base de datos. CÓPIALA.
+        // 4. Pega aquí el objeto de config. Y ASEGÚRATE de añadir/completar la línea `databaseURL`.
         const firebaseConfig = {
-  apiKey: "AIzaSyA0l9pkEG8leCOuSwG2Eh6C7hrqUKanl5k",
-  authDomain: "sorteo2526.firebaseapp.com",
-  projectId: "sorteo2526",
-  storageBucket: "sorteo2526.firebasestorage.app",
-  messagingSenderId: "384343299958",
-  appId: "1:384343299958:web:259844ab88c19ee3098c57"
+          apiKey: "AIzaSyA0l9pkEG8leCOuSwG2Eh6C7hrqUKanl5k",
+          authDomain: "sorteo2526.firebaseapp.com",
+          projectId: "sorteo2526",
+          storageBucket: "sorteo2526.firebasestorage.app",
+          messagingSenderId: "384343299958",
+          appId: "1:384343299958:web:259844ab88c19ee3098c57",
+          // ¡¡¡LÍNEA CLAVE FALTANTE!!! Pega aquí la URL de tu Realtime Database:
+          databaseURL: "https://sorteo2526-default-rtdb.europe-west1.firebasedatabase.app/" 
         };
 
         // --- ⚙️ PASO 2: REGLAS DE LA BASE DE DATOS (Solo una vez) ⚙️ ---
-        // 1. En tu proyecto de Firebase, ve a "Realtime Database" en el menú de la izquierda.
-        // 2. Ve a la pestaña "Reglas".
-        // 3. Borra lo que haya y pega esto. Luego haz clic en "Publicar".
+        // En tu proyecto de Firebase, ve a "Realtime Database" > "Reglas". Borra lo que haya y pega esto. Luego "Publicar".
         /*
-            {
-              "rules": {
-                ".read": "true",
-                ".write": "true"
-              }
-            }
+            { "rules": { ".read": "true", ".write": "true" } }
         */
 
         // --- Código de la aplicación ---
@@ -148,10 +144,11 @@
         }
 
         function initializeApp() {
-            if (!firebaseConfig.apiKey) {
+            // Comprobación más estricta
+            if (!firebaseConfig.apiKey || !firebaseConfig.databaseURL) {
                 setupNotice.classList.remove('hidden');
                 document.getElementById('share-block').style.display = 'none';
-                console.error("Configuración de Firebase no encontrada.");
+                console.error("Configuración de Firebase incompleta. Falta 'apiKey' o 'databaseURL'.");
                 return;
             }
             
@@ -235,7 +232,7 @@
                 return;
             }
             const winner = Math.random() < 0.5 ? opt1 : opt2;
-            dbRef.update({ winner: winner });
+            dbRef.update({ winner: winner, option1: opt1, option2: opt2 });
         });
         
         resetButton.addEventListener('click', () => {
