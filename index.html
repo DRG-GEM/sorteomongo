@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sorteo en Directo con Supabase</title>
+    <title>Sorteo en Directo con Firebase</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
@@ -41,23 +40,21 @@
     <div id="app-container" class="w-full max-w-md mx-auto p-6 md:p-8 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl transition-all duration-300">
         
         <div class="text-center mb-6">
-            <h1 class="text-3xl md:text-4xl font-bold text-indigo-600 dark:text-indigo-400">Sorteo en Directo</h1>
-            <p class="text-gray-500 dark:text-gray-400 mt-2">Sincronizado con Supabase</p>
+            <h1 class="text-3xl md:text-4xl font-bold text-red-600 dark:text-red-400">Sorteo en Directo</h1>
+            <p class="text-gray-500 dark:text-gray-400 mt-2">Sincronizado con Firebase</p>
         </div>
 
-        <!-- Bloque de configuración/Ayuda -->
         <div id="setup-notice" class="hidden mb-6 p-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 rounded-lg text-center">
              <p class="text-amber-800 dark:text-amber-200 text-sm">
-                ¡Acción requerida! Introduce tu URL y Clave de Supabase en el código para activar la sincronización en tiempo real.
+                ¡Acción requerida! Pega tu objeto de configuración de Firebase en el código para activar la sincronización.
             </p>
         </div>
         
-        <!-- URL para compartir -->
         <div id="share-block" class="mb-6 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg text-center">
             <label class="text-sm font-semibold text-gray-600 dark:text-gray-300">Comparte esta URL con tu compañero:</label>
             <div class="flex items-center justify-center mt-2">
                 <input id="share-url" type="text" readonly class="w-full text-center text-sm p-2 font-mono bg-gray-200 dark:bg-gray-600 rounded-md select-all border-none">
-                <button id="copy-url-button" class="ml-2 p-2 rounded-md bg-indigo-100 dark:bg-indigo-800 hover:bg-indigo-200 dark:hover:bg-indigo-700 transition">
+                <button id="copy-url-button" class="ml-2 p-2 rounded-md bg-red-100 dark:bg-red-800 hover:bg-red-200 dark:hover:bg-red-700 transition">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                         <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/>
                         <path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/>
@@ -67,24 +64,22 @@
             <span id="copy-feedback" class="text-xs text-green-500 mt-1 opacity-0 transition-opacity">¡URL Copiada!</span>
         </div>
 
-        <!-- Fase 1: Introducir Opciones -->
         <div id="options-phase">
             <div class="space-y-4 mb-6">
                 <div>
                     <label for="option1" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Opción 1</label>
-                    <input type="text" id="option1" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition" placeholder="Ej: Pizza">
+                    <input type="text" id="option1" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition" placeholder="Ej: Pizza">
                 </div>
                 <div>
                     <label for="option2" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Opción 2</label>
-                    <input type="text" id="option2" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition" placeholder="Ej: Hamburguesa">
+                    <input type="text" id="option2" class="w-full px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition" placeholder="Ej: Hamburguesa">
                 </div>
             </div>
-            <button id="start-raffle-button" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-300 dark:focus:ring-indigo-800 transition-transform transform hover:scale-105">
+            <button id="start-raffle-button" class="w-full bg-red-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-300 dark:focus:ring-red-800 transition-transform transform hover:scale-105">
                 ¡Realizar Sorteo!
             </button>
         </div>
 
-        <!-- Fase 2: Mostrando Resultado -->
         <div id="result-phase" class="hidden text-center">
              <p class="text-gray-500 dark:text-gray-400 mb-2">Y la opción ganadora es...</p>
             <div id="animation-container" class="text-4xl font-bold my-4 h-12"></div>
@@ -95,24 +90,38 @@
         </div>
     </div>
 
-    <script>
-        // --- ⚙️ CONFIGURACIÓN DE SUPABASE ⚙️ ---
-        const SUPABASE_URL = 'https://ekhmybkmoicwnymxqhgo.supabase.co'; // <-- Pega tu URL de Supabase aquí
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVraG15Ymttb2ljd255bXhxaGdvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzNzg0OTYsImV4cCI6MjA2ODk1NDQ5Nn0.WtmtyrJoqgJiuOSYbtpG8qZKwzqOwzEJHKmv1RdMW4Q'; // <-- Pega tu "anon key" de Supabase aquí
+    <!-- SDK de Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 
-        // --- INSTRUCCIONES SQL (Solo una vez por proyecto) ---
+    <script>
+        // --- ⚙️ PASO 1: CONFIGURACIÓN DE FIREBASE ⚙️ ---
+        // 1. Ve a https://console.firebase.google.com/ y crea un nuevo proyecto.
+        // 2. En la configuración del proyecto (icono ⚙️), baja a "Tus apps" y crea una nueva "App web" (icono </>).
+        // 3. Firebase te dará un objeto de configuración. Copia y pégalo aquí, reemplazando el objeto de ejemplo.
+        const firebaseConfig = {
+  apiKey: "AIzaSyA0l9pkEG8leCOuSwG2Eh6C7hrqUKanl5k",
+  authDomain: "sorteo2526.firebaseapp.com",
+  projectId: "sorteo2526",
+  storageBucket: "sorteo2526.firebasestorage.app",
+  messagingSenderId: "384343299958",
+  appId: "1:384343299958:web:259844ab88c19ee3098c57"
+        };
+
+        // --- ⚙️ PASO 2: REGLAS DE LA BASE DE DATOS (Solo una vez) ⚙️ ---
+        // 1. En tu proyecto de Firebase, ve a "Realtime Database" en el menú de la izquierda.
+        // 2. Ve a la pestaña "Reglas".
+        // 3. Borra lo que haya y pega esto. Luego haz clic en "Publicar".
         /*
-            CREATE TABLE public.raffles (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), option1 TEXT, option2 TEXT, winner TEXT, created_at TIMESTAMPTZ DEFAULT now());
-            ALTER TABLE public.raffles ENABLE ROW LEVEL SECURITY;
-            CREATE POLICY "Public raffles are viewable by everyone." ON public.raffles FOR SELECT USING (true);
-            CREATE POLICY "Users can create and update their own raffles." ON public.raffles FOR ALL USING (true);
+            {
+              "rules": {
+                ".read": "true",
+                ".write": "true"
+              }
+            }
         */
 
         // --- Código de la aplicación ---
-        const { createClient } = supabase;
-        let supabaseClient;
-        let raffleChannel;
-
         const option1Input = document.getElementById('option1');
         const option2Input = document.getElementById('option2');
         const startRaffleButton = document.getElementById('start-raffle-button');
@@ -127,12 +136,9 @@
         const copyFeedback = document.getElementById('copy-feedback');
 
         let raffleId;
+        let dbRef;
         let localWinnerState = null;
 
-        /**
-         * Función de Debounce: retrasa la ejecución de una función 
-         * para evitar que se llame demasiadas veces.
-         */
         function debounce(func, delay) {
             let timeout;
             return function(...args) {
@@ -142,14 +148,14 @@
         }
 
         function initializeApp() {
-            if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+            if (!firebaseConfig.apiKey) {
                 setupNotice.classList.remove('hidden');
                 document.getElementById('share-block').style.display = 'none';
-                console.error("Supabase URL y Key no configuradas.");
+                console.error("Configuración de Firebase no encontrada.");
                 return;
             }
             
-            supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            firebase.initializeApp(firebaseConfig);
             handleUrl();
         }
 
@@ -158,60 +164,30 @@
             raffleId = params.get('id');
 
             if (!raffleId) {
-                raffleId = crypto.randomUUID();
+                raffleId = firebase.database().ref().push().key;
                 const newUrl = `${window.location.pathname}?id=${raffleId}`;
                 window.history.replaceState({}, '', newUrl);
-                // Para un sorteo nuevo, no hay estado inicial que cargar
-                listenToRaffleChanges();
-            } else {
-                 // Si hay ID, intenta cargar el estado y luego escucha cambios
-                fetchInitialState();
-                listenToRaffleChanges();
             }
-            shareUrlInput.value = window.location.href;
-        }
-
-        async function fetchInitialState() {
-            console.log('Buscando estado inicial para el sorteo:', raffleId);
-            const { data, error } = await supabaseClient
-                .from('raffles')
-                .select('*')
-                .eq('id', raffleId)
-                .single();
             
-            if (data) {
-                console.log('Estado inicial encontrado:', data);
-                updateUI(data);
-            } else if (error && error.code === 'PGRST116') {
-                console.log('Sorteo nuevo, no hay estado inicial.');
-                resetUI(true);
-            } else if (error) {
-                 console.error("Error al cargar estado inicial:", error);
-            }
+            shareUrlInput.value = window.location.href;
+            dbRef = firebase.database().ref(`raffles/${raffleId}`);
+            listenToRaffleChanges();
         }
 
         function listenToRaffleChanges() {
-            console.log('Escuchando cambios para el sorteo:', raffleId);
-            raffleChannel = supabaseClient.channel(`raffle-${raffleId}`)
-                .on('postgres_changes', 
-                    { event: '*', schema: 'public', table: 'raffles', filter: `id=eq.${raffleId}` }, 
-                    (payload) => {
-                        console.log('Cambio recibido desde Supabase:', payload.new);
-                        updateUI(payload.new);
-                    }
-                )
-                .subscribe((status) => {
-                    if (status === 'SUBSCRIBED') {
-                        console.log('¡Conectado al canal en tiempo real!');
-                    }
-                });
+            dbRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    updateUI(data);
+                }
+            });
         }
         
         function updateUI(data) {
             if (!data) return;
 
             if (data.winner) {
-                if (localWinnerState !== data.winner) {
+                 if (localWinnerState !== data.winner) {
                     localWinnerState = data.winner;
                     runWinnerAnimation(data.option1, data.option2, data.winner);
                 }
@@ -228,7 +204,7 @@
                 }
             }
         }
-
+        
         function runWinnerAnimation(opt1, opt2, winner) {
             optionsPhase.classList.add('hidden');
             resultPhase.classList.remove('hidden');
@@ -247,36 +223,11 @@
             }, 100);
         }
 
-        function resetUI(clearInputs) {
-            localWinnerState = null;
-            optionsPhase.classList.remove('hidden');
-            resultPhase.classList.add('hidden');
-            resultDisplay.textContent = '';
-            animationContainer.textContent = '';
-            if (clearInputs) {
-                option1Input.value = '';
-                option2Input.value = '';
-            }
-        }
+        const debouncedSave = debounce((fieldName, value) => {
+            dbRef.child(fieldName).set(value);
+        }, 350);
 
-        async function saveState(state) {
-            console.log('Guardando estado:', state);
-            const { error } = await supabaseClient
-                .from('raffles')
-                .upsert({ id: raffleId, ...state }, { onConflict: 'id' });
-
-            if (error) console.error('Error guardando el estado:', error.message);
-        }
-        
-        const debouncedSaveState = debounce(() => {
-            const currentState = {
-                option1: option1Input.value,
-                option2: option2Input.value,
-            };
-            saveState(currentState);
-        }, 300); // Espera 300ms después de que el usuario deja de teclear
-
-        startRaffleButton.addEventListener('click', async () => {
+        startRaffleButton.addEventListener('click', () => {
             const opt1 = option1Input.value.trim();
             const opt2 = option2Input.value.trim();
             if (!opt1 || !opt2) {
@@ -284,15 +235,15 @@
                 return;
             }
             const winner = Math.random() < 0.5 ? opt1 : opt2;
-            await saveState({ option1: opt1, option2: opt2, winner: winner });
+            dbRef.update({ winner: winner });
         });
         
-        resetButton.addEventListener('click', async () => {
-             await saveState({ option1: '', option2: '', winner: null });
+        resetButton.addEventListener('click', () => {
+             dbRef.set({ option1: '', option2: '' });
         });
 
-        option1Input.addEventListener('input', debouncedSaveState);
-        option2Input.addEventListener('input', debouncedSaveState);
+        option1Input.addEventListener('input', () => debouncedSave('option1', option1Input.value));
+        option2Input.addEventListener('input', () => debouncedSave('option2', option2Input.value));
 
         copyUrlButton.addEventListener('click', () => {
             navigator.clipboard.writeText(shareUrlInput.value).then(() => {
@@ -314,7 +265,6 @@
         }
         
         document.addEventListener('DOMContentLoaded', initializeApp);
-
     </script>
 </body>
 </html>
