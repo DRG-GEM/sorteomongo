@@ -187,7 +187,9 @@
             
             if (data) {
                 updateUI(data);
-            } else if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+            } else if (error && error.code === 'PGRST116') { // No rows returned, es un sorteo nuevo
+                resetUI(); // Aseguramos que la UI empiece limpia
+            } else if (error) {
                  console.error("Error al cargar estado inicial:", error);
             }
         }
@@ -214,18 +216,24 @@
         
         /** Actualiza la UI con los nuevos datos. */
         function updateUI(data) {
-            if (!data.winner) {
-                if(document.activeElement !== option1Input) option1Input.value = data.option1 || '';
-                if(document.activeElement !== option2Input) option2Input.value = data.option2 || '';
-            }
-
-            if (data.winner && localState.winner !== data.winner) {
-                localState.winner = data.winner;
-                runWinnerAnimation(data.option1, data.option2, data.winner);
-            } else if (data.winner) {
-                showResultPhase(data.winner);
-            } else {
-                resetUI();
+            // Si hay un ganador
+            if (data.winner) {
+                if (localState.winner !== data.winner) { // Si es un ganador nuevo, animar
+                    localState.winner = data.winner;
+                    runWinnerAnimation(data.option1, data.option2, data.winner);
+                } else { // Si ya había ganador (ej. al recargar), solo mostrarlo
+                    showResultPhase(data.winner);
+                }
+            } 
+            // Si NO hay ganador
+            else {
+                // Estamos en la fase de opciones
+                resetUI(); 
+                
+                // Actualizamos los inputs con el texto sincronizado
+                if (document.activeElement !== option1Input) option1Input.value = data.option1 || '';
+                if (document.activeElement !== option2Input) option2Input.value = data.option2 || '';
+                localState.winner = null;
             }
         }
         
