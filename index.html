@@ -129,6 +129,18 @@
         let raffleId;
         let localWinnerState = null;
 
+        /**
+         * Función de Debounce: retrasa la ejecución de una función 
+         * para evitar que se llame demasiadas veces.
+         */
+        function debounce(func, delay) {
+            let timeout;
+            return function(...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), delay);
+            };
+        }
+
         function initializeApp() {
             if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
                 setupNotice.classList.remove('hidden');
@@ -149,13 +161,18 @@
                 raffleId = crypto.randomUUID();
                 const newUrl = `${window.location.pathname}?id=${raffleId}`;
                 window.history.replaceState({}, '', newUrl);
+                // Para un sorteo nuevo, no hay estado inicial que cargar
+                listenToRaffleChanges();
+            } else {
+                 // Si hay ID, intenta cargar el estado y luego escucha cambios
+                fetchInitialState();
+                listenToRaffleChanges();
             }
             shareUrlInput.value = window.location.href;
-            fetchInitialState();
-            listenToRaffleChanges();
         }
 
         async function fetchInitialState() {
+            console.log('Buscando estado inicial para el sorteo:', raffleId);
             const { data, error } = await supabaseClient
                 .from('raffles')
                 .select('*')
@@ -163,8 +180,10 @@
                 .single();
             
             if (data) {
+                console.log('Estado inicial encontrado:', data);
                 updateUI(data);
             } else if (error && error.code === 'PGRST116') {
+                console.log('Sorteo nuevo, no hay estado inicial.');
                 resetUI(true);
             } else if (error) {
                  console.error("Error al cargar estado inicial:", error);
@@ -172,15 +191,20 @@
         }
 
         function listenToRaffleChanges() {
+            console.log('Escuchando cambios para el sorteo:', raffleId);
             raffleChannel = supabaseClient.channel(`raffle-${raffleId}`)
                 .on('postgres_changes', 
                     { event: '*', schema: 'public', table: 'raffles', filter: `id=eq.${raffleId}` }, 
                     (payload) => {
-                        console.log('Cambio recibido:', payload.new);
+                        console.log('Cambio recibido desde Supabase:', payload.new);
                         updateUI(payload.new);
                     }
                 )
-                .subscribe();
+                .subscribe((status) => {
+                    if (status === 'SUBSCRIBED') {
+                        console.log('¡Conectado al canal en tiempo real!');
+                    }
+                });
         }
         
         function updateUI(data) {
@@ -190,8 +214,6 @@
                 if (localWinnerState !== data.winner) {
                     localWinnerState = data.winner;
                     runWinnerAnimation(data.option1, data.option2, data.winner);
-                } else {
-                    showResultPhase(data.winner);
                 }
             } else {
                 localWinnerState = null;
@@ -205,13 +227,6 @@
                     option2Input.value = data.option2 || '';
                 }
             }
-        }
-        
-        function showResultPhase(winner) {
-             optionsPhase.classList.add('hidden');
-             resultPhase.classList.remove('hidden');
-             animationContainer.innerHTML = '';
-             resultDisplay.textContent = winner;
         }
 
         function runWinnerAnimation(opt1, opt2, winner) {
@@ -245,26 +260,29 @@
         }
 
         async function saveState(state) {
+            console.log('Guardando estado:', state);
             const { error } = await supabaseClient
                 .from('raffles')
-                .upsert({ id: raffleId, ...state });
+                .upsert({ id: raffleId, ...state }, { onConflict: 'id' });
 
             if (error) console.error('Error guardando el estado:', error.message);
         }
         
-        function handleInputChange() {
+        const debouncedSaveState = debounce(() => {
             const currentState = {
-                option1: option1Input.value.trim(),
-                option2: option2Input.value.trim(),
-                winner: null
+                option1: option1Input.value,
+                option2: option2Input.value,
             };
             saveState(currentState);
-        }
+        }, 300); // Espera 300ms después de que el usuario deja de teclear
 
         startRaffleButton.addEventListener('click', async () => {
             const opt1 = option1Input.value.trim();
             const opt2 = option2Input.value.trim();
-            if (!opt1 || !opt2) { alert("Por favor, introduce ambas opciones."); return; }
+            if (!opt1 || !opt2) {
+                alert("Por favor, introduce ambas opciones.");
+                return;
+            }
             const winner = Math.random() < 0.5 ? opt1 : opt2;
             await saveState({ option1: opt1, option2: opt2, winner: winner });
         });
@@ -273,8 +291,8 @@
              await saveState({ option1: '', option2: '', winner: null });
         });
 
-        option1Input.addEventListener('input', handleInputChange);
-        option2Input.addEventListener('input', handleInputChange);
+        option1Input.addEventListener('input', debouncedSaveState);
+        option2Input.addEventListener('input', debouncedSaveState);
 
         copyUrlButton.addEventListener('click', () => {
             navigator.clipboard.writeText(shareUrlInput.value).then(() => {
